@@ -1,0 +1,174 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X, ChevronDown, Wallet } from 'lucide-react'
+import { useWallet } from '../context/WalletContext'
+import WalletModal from './WalletModal'
+import './Navbar.css'
+
+const navLinks = [
+  { label: 'Home', href: '#home' },
+  { label: 'Products', href: '#products' },
+  {
+    label: 'Company', href: '#company', dropdown: [
+      { label: 'About Us', href: '#about' },
+      { label: 'Leadership', href: '#leadership' },
+      { label: 'Careers', href: '#careers' },
+    ]
+  },
+  { label: 'Investor Relations', href: '#investors' },
+  { label: 'Blogs & News', href: '#blogs' },
+  { label: 'Contact Us', href: '#contact' },
+]
+
+export default function Navbar() {
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [activeDropdown, setActiveDropdown] = useState(null)
+  const [walletOpen, setWalletOpen] = useState(false)
+  const { balance } = useWallet()
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const handleNavClick = (href) => {
+    setMobileOpen(false)
+    // if on product page, navigate home first
+    if (!href.startsWith('#')) { window.location.href = href; return }
+    const el = document.querySelector(href)
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+    else window.location.href = '/' + href
+  }
+
+  return (
+    <>
+      <motion.header
+        className={`navbar ${scrolled ? 'scrolled' : ''}`}
+        initial={{ y: -80 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <div className="navbar-inner">
+          {/* Left links */}
+          <nav className="nav-links left">
+            {navLinks.slice(0, 2).map(link => (
+              <NavItem key={link.label} link={link} onNavigate={handleNavClick}
+                activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
+            ))}
+          </nav>
+
+          {/* Logo */}
+          <a href="/" className="navbar-logo">
+            <div className="logo-icon">
+              <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
+                <path d="M2 10 Q8 2 14 5 Q20 8 26 2" stroke="#FF2D55" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                <path d="M4 14 L10 8 L18 12 L24 6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.6"/>
+              </svg>
+            </div>
+            <span className="logo-text">BLACKBUCK</span>
+          </a>
+
+          {/* Right links */}
+          <nav className="nav-links right">
+            {navLinks.slice(2).map(link => (
+              <NavItem key={link.label} link={link} onNavigate={handleNavClick}
+                activeDropdown={activeDropdown} setActiveDropdown={setActiveDropdown} />
+            ))}
+          </nav>
+
+          {/* Wallet button */}
+          <button
+            className="navbar-wallet-btn"
+            onClick={() => setWalletOpen(true)}
+            id="navbar-wallet-btn"
+          >
+            <Wallet size={15} />
+            <span className="wallet-btn-label">Wallet</span>
+            <span className="wallet-btn-balance">
+              ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+            </span>
+          </button>
+
+          {/* Mobile toggle */}
+          <button
+            className="mobile-toggle"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              className="mobile-menu"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              {navLinks.map(link => (
+                <button key={link.label} className="mobile-link" onClick={() => handleNavClick(link.href)}>
+                  {link.label}
+                </button>
+              ))}
+              {/* Wallet in mobile */}
+              <button className="mobile-wallet-btn" onClick={() => { setMobileOpen(false); setWalletOpen(true) }}
+                id="mobile-wallet-btn">
+                <Wallet size={16} />
+                <span>My Wallet — ₹{balance.toLocaleString('en-IN')}</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
+
+      {/* Wallet modal */}
+      <AnimatePresence>
+        {walletOpen && <WalletModal onClose={() => setWalletOpen(false)} />}
+      </AnimatePresence>
+    </>
+  )
+}
+
+function NavItem({ link, onNavigate, activeDropdown, setActiveDropdown }) {
+  const hasDropdown = link.dropdown && link.dropdown.length > 0
+
+  return (
+    <div
+      className="nav-item"
+      onMouseEnter={() => hasDropdown && setActiveDropdown(link.label)}
+      onMouseLeave={() => setActiveDropdown(null)}
+    >
+      <button className="nav-link" onClick={() => onNavigate(link.href)}>
+        {link.label}
+        {hasDropdown && <ChevronDown size={14} style={{
+          transform: activeDropdown === link.label ? 'rotate(180deg)' : 'rotate(0)',
+          transition: 'transform 0.2s ease'
+        }} />}
+      </button>
+
+      <AnimatePresence>
+        {hasDropdown && activeDropdown === link.label && (
+          <motion.div
+            className="dropdown"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+          >
+            {link.dropdown.map(item => (
+              <button key={item.label} className="dropdown-item" onClick={() => onNavigate(item.href)}>
+                {item.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
