@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, ChevronDown, Wallet } from 'lucide-react'
 import { useWallet } from '../context/WalletContext'
 import WalletModal from './WalletModal'
+import logo from '../assets/logo.png'
 import './Navbar.css'
 
 const navLinks = [
@@ -61,13 +62,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <a href="/" className="navbar-logo">
-            <div className="logo-icon">
-              <svg width="28" height="20" viewBox="0 0 28 20" fill="none">
-                <path d="M2 10 Q8 2 14 5 Q20 8 26 2" stroke="#FF2D55" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                <path d="M4 14 L10 8 L18 12 L24 6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.6"/>
-              </svg>
-            </div>
-            <span className="logo-text">BLACKBUCK</span>
+            <img src={logo} alt="BlackBuck" className="logo-img" />
           </a>
 
           {/* Right links */}

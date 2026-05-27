@@ -109,7 +109,9 @@
   margin-bottom: 48px;
 }
 
-.footer-brand {}
+.footer-brand {
+  margin-bottom: 20px;
+}
 
 .footer-logo {
   display: inline-flex;
@@ -119,23 +121,10 @@
   margin-bottom: 16px;
 }
 
-.footer-logo-icon {
-  width: 36px;
-  height: 36px;
-  background: rgba(255,45,85,0.1);
-  border: 1px solid rgba(255,45,85,0.25);
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.footer-logo span {
-  font-family: 'Outfit', sans-serif;
-  font-size: 16px;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 2px;
+.footer-logo .logo-img {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 .footer-brand-desc {
@@ -172,7 +161,10 @@
 }
 
 /* Links columns */
-.footer-links-col {}
+.footer-links-col {
+  display: flex;
+  flex-direction: column;
+}
 
 .footer-col-title {
   font-family: 'Outfit', sans-serif;
@@ -354,3 +346,4 @@
     flex-direction: column;
   }
 }
+

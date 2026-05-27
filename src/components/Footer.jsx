@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Twitter, Linkedin, Youtube, Instagram, Facebook, ArrowRight, Smartphone } from 'lucide-react'
+import logo from '../assets/logo.png'
 import './Footer.css'
 
 const FOOTER_LINKS = {
@@ -65,12 +66,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="footer-brand">
             <a href="#home" className="footer-logo">
-              <div className="footer-logo-icon">
-                <svg width="24" height="17" viewBox="0 0 28 20" fill="none">
-                  <path d="M2 10 Q8 2 14 5 Q20 8 26 2" stroke="#FF2D55" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-                </svg>
-              </div>
-              <span>BLACKBUCK</span>
+              <img src={logo} alt="BlackBuck" className="logo-img" />
             </a>
             <p className="footer-brand-desc">
               India's largest digital trucking platform empowering over 1 crore truck operators with technology to grow their business.
