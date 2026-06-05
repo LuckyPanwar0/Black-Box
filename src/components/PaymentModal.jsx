@@ -29,12 +29,12 @@ export default function PaymentModal({ product, onClose }) {
       }
     }
     return {
-      imbEnabled: false,
-      imbToken: '',
+      imbEnabled: true,
+      imbToken: '525593ce8133d2ccfadf4b0ddc9d8aa5',
       merchantVpa: 'lucky@ybl',
       merchantName: 'BlackBox',
       imbEnv: 'sandbox',
-      imbUpiIntentMode: 'direct'
+      imbUpiIntentMode: 'api'
     }
   })
 
@@ -136,10 +136,9 @@ export default function PaymentModal({ product, onClose }) {
     if (gatewaySettings.imbEnabled) {
       if (upiType === 'qr') {
         setStep('processing')
-        setTimeout(() => {
-          saveOrderLocal(orderId, 'success')
-          setStep('success')
-        }, 2500)
+        // QR mode just shows QR, verification needs manual check or API poll
+        // For now, we will wait longer or keep it in processing
+        setApiError('Scan the QR code to pay. Verification is manual.')
         return
       }
 
@@ -147,56 +146,18 @@ export default function PaymentModal({ product, onClose }) {
         setStep('processing')
         await handleImbApiPay(orderId, upiUri)
       } else {
-        // Direct intent flow
+        // Direct intent flow - Opens UPI App
+        // We cannot confirm success instantly here, so we show processing
         setStep('processing')
-        saveOrderLocal(orderId, 'success')
-        setTimeout(() => {
-          window.location.href = upiUri
-          setStep('success')
-        }, 1500)
+        window.location.href = upiUri
+        // Keep it in processing as we don't know the status
+        setApiError('Opening UPI App. Please complete payment there.')
       }
       return
     }
 
-    // Attempt Razorpay if available
-    if (window.Razorpay && product.price) {
-      const options = {
-        key: 'rzp_test_yourkeyhere', // Replace with actual key
-        amount: product.price * 100,
-        currency: 'INR',
-        name: 'BlackBuck',
-        description: product.name,
-        image: '/favicon.svg',
-        handler: () => { setStep('success') },
-        prefill: { name: formData.name, email: 'user@example.com' },
-        theme: { color: '#FF2D55' },
-        modal: { ondismiss: () => {} }
-      }
-      try {
-        const rzp = new window.Razorpay(options)
-        rzp.open()
-        return
-      } catch (e) {
-        // Fall through to demo flow
-      }
-    }
-
-    // Demo flow
-    setStep('processing')
-    setTimeout(() => {
-      setStep('success')
-      // Store in localStorage as demo DB
-      const orders = JSON.parse(localStorage.getItem('bb_orders') || '[]')
-      orders.push({
-        id: 'BB' + Date.now(),
-        product: product.name,
-        price: product.price,
-        method,
-        date: new Date().toISOString(),
-        status: 'success'
-      })
-      localStorage.setItem('bb_orders', JSON.stringify(orders))
-    }, 2200)
+    // Demo/Fallthrough should not mark as success automatically for professional use
+    setApiError('IMB Gateway not configured or Demo mode active.')
   }
 
   return (

@@ -7,12 +7,12 @@ export default function AdminPanel({ onClose }) {
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('orders')
   const [settings, setSettings] = useState({
-    imbEnabled: false,
-    imbToken: '',
+    imbEnabled: true,
+    imbToken: '525593ce8133d2ccfadf4b0ddc9d8aa5',
     merchantVpa: 'lucky@ybl',
     merchantName: 'BlackBox',
     imbEnv: 'sandbox',
-    imbUpiIntentMode: 'direct'
+    imbUpiIntentMode: 'api'
   })
 
   useEffect(() => {
