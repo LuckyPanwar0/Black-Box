@@ -31,7 +31,7 @@ export default function PaymentModal({ product, onClose }) {
     return {
       imbEnabled: true,
       imbToken: '525593ce8133d2ccfadf4b0ddc9d8aa5',
-      merchantVpa: 'lucky@ybl',
+      merchantVpa: 'paytm.s1w0x7g@pty',
       merchantName: 'BlackBox',
       imbEnv: 'sandbox',
       imbUpiIntentMode: 'api'
