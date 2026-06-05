@@ -11,8 +11,6 @@ import PaymentResult from './pages/PaymentResult'
 import AdminPage from './pages/AdminPage'
 import './App.css'
 
-import { AuthProvider } from './context/AuthContext'
-
 function HomePage() {
   return (
     <>
@@ -28,20 +26,18 @@ function HomePage() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <WalletProvider>
-        <BrowserRouter>
-          <div className="app">
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/product/:productId" element={<ProductPage />} />
-              <Route path="/payment-result" element={<PaymentResult />} />
-              <Route path="/admin" element={<AdminPage />} />
-            </Routes>
-          </div>
-        </BrowserRouter>
-      </WalletProvider>
-    </AuthProvider>
+    <WalletProvider>
+      <BrowserRouter>
+        <div className="app">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/product/:productId" element={<ProductPage />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
+            <Route path="/admin" element={<AdminPage />} />
+          </Routes>
+        </div>
+      </BrowserRouter>
+    </WalletProvider>
   )
 }

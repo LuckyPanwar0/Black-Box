@@ -22,19 +22,14 @@ const navLinks = [
   { label: 'Contact Us', href: '#contact' },
 ]
 
-import { useAuth } from '../context/AuthContext'
-import LoginModal from './LoginModal'
-
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [walletOpen, setWalletOpen] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
   
   const navigate = useNavigate()
   const { balance } = useWallet()
-  const { user, isAuthenticated, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40)
@@ -96,24 +91,10 @@ export default function Navbar() {
               </span>
             </button>
 
-            {/* Auth Button */}
-            {isAuthenticated ? (
-              <div className="nav-profile-group">
-                {user?.role === 'super_admin' && (
-                  <button className="nav-admin-btn" onClick={() => navigate('/admin')}>
-                    Admin
-                  </button>
-                )}
-                <button className="nav-logout-btn" onClick={logout}>Logout</button>
-                <div className="nav-user-badge">
-                  {user.name.split(' ')[0]}
-                </div>
-              </div>
-            ) : (
-              <button className="nav-login-btn" onClick={() => setLoginOpen(true)}>
-                Login
-              </button>
-            )}
+            {/* Admin button */}
+            <button className="nav-admin-btn" onClick={() => navigate('/admin')}>
+              Admin
+            </button>
           </div>
 
           {/* Mobile toggle */}
@@ -148,16 +129,10 @@ export default function Navbar() {
                 <span>My Wallet — ₹{balance.toLocaleString('en-IN')}</span>
               </button>
 
-              {/* Login in mobile */}
-              {!isAuthenticated ? (
-                <button className="mobile-login-btn" onClick={() => { setMobileOpen(false); setLoginOpen(true) }}>
-                  Login / Signup
-                </button>
-              ) : (
-                <button className="mobile-logout-btn" onClick={() => { setMobileOpen(false); logout() }}>
-                  Logout ({user.mobile})
-                </button>
-              )}
+              {/* Admin in mobile */}
+              <button className="mobile-login-btn" onClick={() => { setMobileOpen(false); navigate('/admin') }}>
+                Admin
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -166,11 +141,6 @@ export default function Navbar() {
       {/* Wallet modal */}
       <AnimatePresence>
         {walletOpen && <WalletModal onClose={() => setWalletOpen(false)} />}
-      </AnimatePresence>
-
-      {/* Login modal */}
-      <AnimatePresence>
-        {loginOpen && <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />}
       </AnimatePresence>
     </>
   )
