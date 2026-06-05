@@ -241,7 +241,7 @@ export default function AdminPanel({ onClose }) {
                     <input
                       type="text"
                       className="setting-input"
-                      placeholder="e.g. lucky@ybl"
+                      placeholder="e.g. paytm.s1w0x7g@pty"
                       value={settings.merchantVpa}
                       onChange={e => saveSettings({ ...settings, merchantVpa: e.target.value })}
                     />

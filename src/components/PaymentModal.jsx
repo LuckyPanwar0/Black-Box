@@ -127,7 +127,7 @@ export default function PaymentModal({ product, onClose }) {
     if (!validate()) return
 
     const orderId = 'BB' + Date.now()
-    const vpa = gatewaySettings.merchantVpa || 'lucky@ybl'
+    const vpa = gatewaySettings.merchantVpa || 'paytm.s1w0x7g@pty'
     const name = gatewaySettings.merchantName || 'BlackBox'
     const amount = product.price || 0
     const desc = product.name
@@ -312,7 +312,7 @@ export default function PaymentModal({ product, onClose }) {
                       <div className="upi-qr-container">
                         <img
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                            `upi://pay?pa=${gatewaySettings.merchantVpa || 'lucky@ybl'}&pn=${encodeURIComponent(
+                            `upi://pay?pa=${gatewaySettings.merchantVpa || 'paytm.s1w0x7g@pty'}&pn=${encodeURIComponent(
                               gatewaySettings.merchantName || 'BlackBox'
                             )}&am=${product.price || 0}&cu=INR&tn=${encodeURIComponent(product.name)}`
                           )}`}
@@ -320,7 +320,7 @@ export default function PaymentModal({ product, onClose }) {
                           className="upi-qr-image"
                         />
                         <div className="upi-qr-labels">
-                          <span className="upi-qr-vpa">{gatewaySettings.merchantVpa || 'lucky@ybl'}</span>
+                          <span className="upi-qr-vpa">{gatewaySettings.merchantVpa || 'paytm.s1w0x7g@pty'}</span>
                           <span className="upi-qr-merchant">{gatewaySettings.merchantName || 'BlackBox'}</span>
                         </div>
                       </div>
