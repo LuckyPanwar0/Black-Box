@@ -1,4 +1,5 @@
 import { ArrowRight, Play } from 'lucide-react'
+import { motion } from 'framer-motion'
 import './Hero.css'
 
 export default function Hero() {
