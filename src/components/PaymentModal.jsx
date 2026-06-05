@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { X, CreditCard, Smartphone, Building2, CheckCircle2, Loader2, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { API_BASE_URL, authHeaders } from '../utils/api'

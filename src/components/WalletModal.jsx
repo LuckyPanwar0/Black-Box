@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { X, Wallet, Plus, ArrowDown, ArrowUp, TrendingUp, CheckCircle2 } from 'lucide-react'
 import { useWallet } from '../context/WalletContext'
 import './WalletModal.css'
