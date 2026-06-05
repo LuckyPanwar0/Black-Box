@@ -78,9 +78,10 @@ app.post('/api/create-order', async (req, res) => {
         const userToken = process.env.IMB_USER_TOKEN;
         const redirectUrl = process.env.REDIRECT_URL || 'https://blackbuck-demo.vercel.app';
 
-        const apiUrl = env === 'production' 
+        // Priority to PAYMENT_GATEWAY_URL from .env if present
+        const apiUrl = process.env.PAYMENT_GATEWAY_URL || (env === 'production' 
             ? 'https://secure.imbpayment.in/api/create-order'
-            : 'https://secure-stage.imb.org.in/api/create-order';
+            : 'https://secure-stage.imb.org.in/api/create-order');
 
         const payload = new URLSearchParams();
         payload.append('user_token', userToken);
