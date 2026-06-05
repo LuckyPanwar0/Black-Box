@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { X, Wallet, Plus, ArrowDown, ArrowUp, TrendingUp, CheckCircle2 } from 'lucide-react'
 import { useWallet } from '../context/WalletContext'
 import './WalletModal.css'
@@ -13,10 +13,13 @@ export default function WalletModal({ onClose }) {
   const [selectedAmt, setSelectedAmt] = useState(null)
   const [added, setAdded] = useState(false)
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const amt = parseFloat(customAmt) || selectedAmt
     if (!amt || amt <= 0 || amt > 100000) return
-    addMoney(amt, 'Added to BlackBuck Wallet')
+    const result = await addMoney(amt, 'Added to BlackBuck Wallet')
+    if (!result.success) {
+      return
+    }
     setAdded(true)
     setCustomAmt('')
     setSelectedAmt(null)

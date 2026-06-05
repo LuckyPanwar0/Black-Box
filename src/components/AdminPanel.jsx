@@ -1,12 +1,29 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Package, CheckCircle2, Clock, IndianRupee, RefreshCw, Trash2, ShoppingBag, Settings } from 'lucide-react'
 import './AdminPanel.css'
 
+const getStoredOrders = () => {
+  const stored = JSON.parse(localStorage.getItem('bb_orders') || '[]')
+  return stored.reverse()
+}
+
+const getStoredSettings = () => {
+  const stored = localStorage.getItem('bb_payment_settings')
+  if (stored) {
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 export default function AdminPanel({ onClose }) {
-  const [orders, setOrders] = useState([])
+  const [orders, setOrders] = useState(getStoredOrders)
   const [activeTab, setActiveTab] = useState('orders')
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState(() => getStoredSettings() || {
     imbEnabled: true,
     imbToken: '525593ce8133d2ccfadf4b0ddc9d8aa5',
     merchantVpa: 'paytm.s1w0x7g@pty',
@@ -15,25 +32,9 @@ export default function AdminPanel({ onClose }) {
     imbUpiIntentMode: 'api'
   })
 
-  useEffect(() => {
-    loadOrders()
-    loadSettings()
-  }, [])
-
   const loadOrders = () => {
     const stored = JSON.parse(localStorage.getItem('bb_orders') || '[]')
     setOrders(stored.reverse())
-  }
-
-  const loadSettings = () => {
-    const stored = localStorage.getItem('bb_payment_settings')
-    if (stored) {
-      try {
-        setSettings(JSON.parse(stored))
-      } catch (e) {
-        console.error(e)
-      }
-    }
   }
 
   const saveSettings = (updatedSettings) => {

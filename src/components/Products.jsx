@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ArrowRight, ExternalLink, Tag, MapPin, Package, Fuel, Landmark } from 'lucide-react'
 import PaymentModal from './PaymentModal'

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { X, CreditCard, Smartphone, Building2, CheckCircle2, Loader2, Shield } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { API_BASE_URL, authHeaders } from '../utils/api'
 import './PaymentModal.css'
 
 const PAYMENT_METHODS = [
@@ -10,6 +11,7 @@ const PAYMENT_METHODS = [
 ]
 
 export default function PaymentModal({ product, onClose }) {
+  const { isAuthenticated } = useAuth()
   const [step, setStep] = useState('select') // select | processing | success
   const [method, setMethod] = useState('upi')
   const [upiType, setUpiType] = useState('app') // app | qr | id
@@ -24,8 +26,8 @@ export default function PaymentModal({ product, onClose }) {
     if (stored) {
       try {
         return JSON.parse(stored)
-      } catch (e) {
-        console.error(e)
+      } catch {
+        // ignore parse errors
       }
     }
     return {
@@ -79,43 +81,50 @@ export default function PaymentModal({ product, onClose }) {
     setIsApiCalling(true)
     setApiError(null)
 
-    // Call our backend instead of direct IMB API
-    // When deploying to Vercel, the API is available at /api/create-order
-    const backendUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001/api/create-order'
-      : '/api/create-order'
-
     try {
-      const response = await fetch(backendUrl, {
+      const response = await fetch(`${API_BASE_URL}/api/payments/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders(),
         },
         body: JSON.stringify({
           amount: (product.price || 0).toString(),
           order_id: orderId,
-          customer_mobile: formData.customerMobile || '9876543210',
-          remark2: product.name,
-          env: gatewaySettings.imbEnv
-        })
+          remark: product.name,
+        }),
       })
-      
-      const data = await response.json()
 
-      if (data.status === 'success' || data.errorcode === '0' || data.payment_url) {
-        const payUrl = data.payment_url || data.url
-        if (payUrl) {
-          saveOrderLocal(orderId, 'pending')
-          window.location.href = payUrl
-          return
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || 'Payment creation failed')
+      }
+
+      let payUrl = data.gateway?.payment_url || data.gateway?.url
+      if (!payUrl && data.gateway?.checkout_url) {
+        payUrl = data.gateway.checkout_url
+      }
+      if (!payUrl && data.payment?.gateway_response) {
+        try {
+          const gatewayResponse = JSON.parse(data.payment.gateway_response)
+          payUrl = gatewayResponse.payment_url || gatewayResponse.url
+        } catch {
+          // ignore parse errors
         }
       }
-      throw new Error(data.message || 'Payment link not received from backend.')
+
+      if (payUrl) {
+        saveOrderLocal(orderId, 'pending')
+        window.location.href = payUrl
+        return
+      }
+
+      throw new Error('Payment link not received from backend.')
     } catch (err) {
       console.error('Backend Call Error:', err)
       setApiError('Backend Error: ' + err.message + '. Falling back to local UPI Deep-link.')
       setTimeout(() => {
-        saveOrderLocal(orderId, 'success')
+        saveOrderLocal(orderId, 'pending')
         window.location.href = upiUri
       }, 2500)
     } finally {
@@ -133,11 +142,14 @@ export default function PaymentModal({ product, onClose }) {
     const desc = product.name
     const upiUri = `upi://pay?pa=${vpa}&pn=${encodeURIComponent(name)}&tr=${orderId}&am=${amount}&cu=INR&tn=${encodeURIComponent(desc)}`
 
+    if (!isAuthenticated) {
+      setApiError('Please log in before initiating payment.')
+      return
+    }
+
     if (gatewaySettings.imbEnabled) {
       if (upiType === 'qr') {
         setStep('processing')
-        // QR mode just shows QR, verification needs manual check or API poll
-        // For now, we will wait longer or keep it in processing
         setApiError('Scan the QR code to pay. Verification is manual.')
         return
       }

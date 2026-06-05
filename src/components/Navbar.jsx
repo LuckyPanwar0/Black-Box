@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, ChevronDown, Wallet } from 'lucide-react'
 import { useWallet } from '../context/WalletContext'
@@ -31,6 +32,7 @@ export default function Navbar() {
   const [walletOpen, setWalletOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
   
+  const navigate = useNavigate()
   const { balance } = useWallet()
   const { user, isAuthenticated, logout } = useAuth()
 
@@ -42,10 +44,11 @@ export default function Navbar() {
 
   const handleNavClick = (href) => {
     setMobileOpen(false)
-    // if on product page, navigate home first
+    // eslint-disable-next-line react-hooks/immutability
     if (!href.startsWith('#')) { window.location.href = href; return }
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
+    // eslint-disable-next-line react-hooks/immutability
     else window.location.href = '/' + href
   }
 
@@ -96,6 +99,11 @@ export default function Navbar() {
             {/* Auth Button */}
             {isAuthenticated ? (
               <div className="nav-profile-group">
+                {user?.role === 'super_admin' && (
+                  <button className="nav-admin-btn" onClick={() => navigate('/admin')}>
+                    Admin
+                  </button>
+                )}
                 <button className="nav-logout-btn" onClick={logout}>Logout</button>
                 <div className="nav-user-badge">
                   {user.name.split(' ')[0]}

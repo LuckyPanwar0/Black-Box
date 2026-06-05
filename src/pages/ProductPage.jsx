@@ -9,7 +9,7 @@ import PaymentModal from '../components/PaymentModal'
 import { useWallet } from '../context/WalletContext'
 import './ProductPage.css'
 
-export const PRODUCTS_DATA = {
+const PRODUCTS_DATA = {
   fastag: {
     id: 'fastag',
     name: 'BlackBuck FASTag',
@@ -208,7 +208,6 @@ export default function ProductPage() {
   const { balance, deductMoney } = useWallet()
   const [showPayment, setShowPayment] = useState(false)
   const [openFaq, setOpenFaq] = useState(null)
-  const [walletPay, setWalletPay] = useState(false)
   const [walletMsg, setWalletMsg] = useState(null)
   const [imgError, setImgError] = useState(false)
 
@@ -224,19 +223,17 @@ export default function ProductPage() {
 
   const Icon = product.icon
 
-  const handleWalletPay = () => {
+  const handleWalletPay = async () => {
     if (!product.price) { setShowPayment(true); return }
-    const result = deductMoney(product.price, `${product.name} purchase`)
+    const result = await deductMoney(product.price, `${product.name} purchase`)
     if (result.success) {
       setWalletMsg({ type: 'success', text: `✅ Payment of ₹${product.price} successful via Wallet!` })
-      // Store order
       const orders = JSON.parse(localStorage.getItem('bb_orders') || '[]')
       orders.push({ id: 'BB' + Date.now(), product: product.name, price: product.price, method: 'wallet', date: new Date().toISOString(), status: 'success' })
       localStorage.setItem('bb_orders', JSON.stringify(orders))
     } else {
       setWalletMsg({ type: 'error', text: `❌ ${result.error}. Please add money to wallet.` })
     }
-    setWalletPay(true)
     setTimeout(() => setWalletMsg(null), 4000)
   }
 

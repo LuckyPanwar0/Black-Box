@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 import './Testimonials.css'
 

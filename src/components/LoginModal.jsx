@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Smartphone, ShieldCheck, ArrowRight, Loader2, MessageSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { API_BASE_URL, fetchJson } from '../utils/api'
 import './LoginModal.css'
 
 export default function LoginModal({ isOpen, onClose }) {
@@ -29,24 +30,20 @@ export default function LoginModal({ isOpen, onClose }) {
     setIsLoading(true)
     
     try {
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/otp/send'
-        : '/api/otp/send'
-
-      const res = await fetch(backendUrl, {
+      const data = await fetchJson(`${API_BASE_URL}/api/auth/otp/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile })
       })
-      const data = await res.json()
+
       if (data.success) {
         setStep('otp')
         setTimer(60)
       } else {
-        setError(data.message)
+        setError(data.message || 'Unable to send OTP')
       }
     } catch (err) {
-      setError('Connection failed. Is backend running?')
+      setError(err.message || 'Connection failed. Is backend running?')
     } finally {
       setIsLoading(false)
     }
@@ -60,24 +57,16 @@ export default function LoginModal({ isOpen, onClose }) {
     setIsLoading(true)
 
     try {
-      const backendUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3001/api/otp/verify'
-        : '/api/otp/verify'
-
-      const res = await fetch(backendUrl, {
+      const data = await fetchJson(`${API_BASE_URL}/api/auth/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile, otp })
       })
-      const data = await res.json()
-      if (data.success) {
-        login(data.user)
-        onClose()
-      } else {
-        setError(data.message)
-      }
+
+      login(data.user, data.token)
+      onClose()
     } catch (err) {
-      setError('Verification failed')
+      setError(err.data?.message || err.message || 'Verification failed')
     } finally {
       setIsLoading(false)
     }
