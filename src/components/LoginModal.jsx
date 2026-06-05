@@ -29,7 +29,11 @@ export default function LoginModal({ isOpen, onClose }) {
     setIsLoading(true)
     
     try {
-      const res = await fetch('http://localhost:3001/api/otp/send', {
+      const backendUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/otp/send'
+        : '/api/otp/send'
+
+      const res = await fetch(backendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile })
@@ -56,7 +60,11 @@ export default function LoginModal({ isOpen, onClose }) {
     setIsLoading(true)
 
     try {
-      const res = await fetch('http://localhost:3001/api/otp/verify', {
+      const backendUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/otp/verify'
+        : '/api/otp/verify'
+
+      const res = await fetch(backendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobile, otp })
