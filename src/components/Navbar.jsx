@@ -21,12 +21,18 @@ const navLinks = [
   { label: 'Contact Us', href: '#contact' },
 ]
 
+import { useAuth } from '../context/AuthContext'
+import LoginModal from './LoginModal'
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [walletOpen, setWalletOpen] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
+  
   const { balance } = useWallet()
+  const { user, isAuthenticated, logout } = useAuth()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40)
@@ -73,18 +79,34 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* Wallet button */}
-          <button
-            className="navbar-wallet-btn"
-            onClick={() => setWalletOpen(true)}
-            id="navbar-wallet-btn"
-          >
-            <Wallet size={15} />
-            <span className="wallet-btn-label">Wallet</span>
-            <span className="wallet-btn-balance">
-              ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
-            </span>
-          </button>
+          <div className="navbar-actions">
+            {/* Wallet button */}
+            <button
+              className="navbar-wallet-btn"
+              onClick={() => setWalletOpen(true)}
+              id="navbar-wallet-btn"
+            >
+              <Wallet size={15} />
+              <span className="wallet-btn-label">Wallet</span>
+              <span className="wallet-btn-balance">
+                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+              </span>
+            </button>
+
+            {/* Auth Button */}
+            {isAuthenticated ? (
+              <div className="nav-profile-group">
+                <button className="nav-logout-btn" onClick={logout}>Logout</button>
+                <div className="nav-user-badge">
+                  {user.name.split(' ')[0]}
+                </div>
+              </div>
+            ) : (
+              <button className="nav-login-btn" onClick={() => setLoginOpen(true)}>
+                Login
+              </button>
+            )}
+          </div>
 
           {/* Mobile toggle */}
           <button
@@ -117,6 +139,17 @@ export default function Navbar() {
                 <Wallet size={16} />
                 <span>My Wallet — ₹{balance.toLocaleString('en-IN')}</span>
               </button>
+
+              {/* Login in mobile */}
+              {!isAuthenticated ? (
+                <button className="mobile-login-btn" onClick={() => { setMobileOpen(false); setLoginOpen(true) }}>
+                  Login / Signup
+                </button>
+              ) : (
+                <button className="mobile-logout-btn" onClick={() => { setMobileOpen(false); logout() }}>
+                  Logout ({user.mobile})
+                </button>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -125,6 +158,11 @@ export default function Navbar() {
       {/* Wallet modal */}
       <AnimatePresence>
         {walletOpen && <WalletModal onClose={() => setWalletOpen(false)} />}
+      </AnimatePresence>
+
+      {/* Login modal */}
+      <AnimatePresence>
+        {loginOpen && <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />}
       </AnimatePresence>
     </>
   )

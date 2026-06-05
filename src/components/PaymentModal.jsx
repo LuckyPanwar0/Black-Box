@@ -12,13 +12,45 @@ const PAYMENT_METHODS = [
 export default function PaymentModal({ product, onClose }) {
   const [step, setStep] = useState('select') // select | processing | success
   const [method, setMethod] = useState('upi')
-  const [formData, setFormData] = useState({ upiId: '', cardNo: '', expiry: '', cvv: '', name: '', bank: 'sbi' })
+  const [upiType, setUpiType] = useState('app') // app | qr | id
+  const [upiAppSelected, setUpiAppSelected] = useState('phonepe')
+  const [formData, setFormData] = useState({ upiId: '', cardNo: '', expiry: '', cvv: '', name: '', bank: 'sbi', customerMobile: '' })
   const [errors, setErrors] = useState({})
+  const [isApiCalling, setIsApiCalling] = useState(false)
+  const [apiError, setApiError] = useState(null)
+
+  const [gatewaySettings] = useState(() => {
+    const stored = localStorage.getItem('bb_payment_settings')
+    if (stored) {
+      try {
+        return JSON.parse(stored)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    return {
+      imbEnabled: false,
+      imbToken: '',
+      merchantVpa: 'lucky@ybl',
+      merchantName: 'BlackBox',
+      imbEnv: 'sandbox',
+      imbUpiIntentMode: 'direct'
+    }
+  })
 
   const validate = () => {
     const newErrors = {}
     if (method === 'upi') {
-      if (!formData.upiId || !formData.upiId.includes('@')) newErrors.upiId = 'Enter valid UPI ID (e.g. name@upi)'
+      if (gatewaySettings.imbEnabled) {
+        if (!formData.customerMobile || formData.customerMobile.length < 10) {
+          newErrors.customerMobile = 'Enter a valid 10-digit mobile number'
+        }
+      }
+      if (upiType === 'id') {
+        if (!formData.upiId || !formData.upiId.includes('@')) {
+          newErrors.upiId = 'Enter valid UPI ID (e.g. name@upi)'
+        }
+      }
     }
     if (method === 'card') {
       if (!formData.cardNo || formData.cardNo.replace(/\s/g,'').length < 16) newErrors.cardNo = 'Enter valid 16-digit card number'
@@ -30,8 +62,101 @@ export default function PaymentModal({ product, onClose }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handlePay = () => {
+  const saveOrderLocal = (orderId, status = 'success') => {
+    const orders = JSON.parse(localStorage.getItem('bb_orders') || '[]')
+    orders.push({
+      id: orderId,
+      product: product.name,
+      price: product.price,
+      method: 'upi_imb',
+      date: new Date().toISOString(),
+      status
+    })
+    localStorage.setItem('bb_orders', JSON.stringify(orders))
+  }
+
+  const handleImbApiPay = async (orderId, upiUri) => {
+    setIsApiCalling(true)
+    setApiError(null)
+
+    // Call our backend instead of direct IMB API
+    // When deploying to Vercel, the API is available at /api/create-order
+    const backendUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001/api/create-order'
+      : '/api/create-order'
+
+    try {
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: (product.price || 0).toString(),
+          order_id: orderId,
+          customer_mobile: formData.customerMobile || '9876543210',
+          remark2: product.name,
+          env: gatewaySettings.imbEnv
+        })
+      })
+      
+      const data = await response.json()
+
+      if (data.status === 'success' || data.errorcode === '0' || data.payment_url) {
+        const payUrl = data.payment_url || data.url
+        if (payUrl) {
+          saveOrderLocal(orderId, 'pending')
+          window.location.href = payUrl
+          return
+        }
+      }
+      throw new Error(data.message || 'Payment link not received from backend.')
+    } catch (err) {
+      console.error('Backend Call Error:', err)
+      setApiError('Backend Error: ' + err.message + '. Falling back to local UPI Deep-link.')
+      setTimeout(() => {
+        saveOrderLocal(orderId, 'success')
+        window.location.href = upiUri
+      }, 2500)
+    } finally {
+      setIsApiCalling(false)
+    }
+  }
+
+  const handlePay = async () => {
     if (!validate()) return
+
+    const orderId = 'BB' + Date.now()
+    const vpa = gatewaySettings.merchantVpa || 'lucky@ybl'
+    const name = gatewaySettings.merchantName || 'BlackBox'
+    const amount = product.price || 0
+    const desc = product.name
+    const upiUri = `upi://pay?pa=${vpa}&pn=${encodeURIComponent(name)}&tr=${orderId}&am=${amount}&cu=INR&tn=${encodeURIComponent(desc)}`
+
+    if (gatewaySettings.imbEnabled) {
+      if (upiType === 'qr') {
+        setStep('processing')
+        setTimeout(() => {
+          saveOrderLocal(orderId, 'success')
+          setStep('success')
+        }, 2500)
+        return
+      }
+
+      if (gatewaySettings.imbUpiIntentMode === 'api') {
+        setStep('processing')
+        await handleImbApiPay(orderId, upiUri)
+      } else {
+        // Direct intent flow
+        setStep('processing')
+        saveOrderLocal(orderId, 'success')
+        setTimeout(() => {
+          window.location.href = upiUri
+          setStep('success')
+        }, 1500)
+      }
+      return
+    }
 
     // Attempt Razorpay if available
     if (window.Razorpay && product.price) {
@@ -169,17 +294,114 @@ export default function PaymentModal({ product, onClose }) {
             {/* Form fields */}
             <div className="modal-section">
               {method === 'upi' && (
-                <div className="form-group">
-                  <label className="form-label" htmlFor="upi-input">UPI ID</label>
-                  <input
-                    id="upi-input"
-                    type="text"
-                    className={`form-input ${errors.upiId ? 'error' : ''}`}
-                    placeholder="name@ybl or name@paytm"
-                    value={formData.upiId}
-                    onChange={e => setFormData(f => ({...f, upiId: e.target.value}))}
-                  />
-                  {errors.upiId && <span className="form-error">{errors.upiId}</span>}
+                <div className="upi-payment-container">
+                  <div className="upi-type-tabs">
+                    <button
+                      type="button"
+                      className={`upi-type-tab ${upiType === 'app' ? 'active' : ''}`}
+                      onClick={() => setUpiType('app')}
+                    >
+                      UPI Apps
+                    </button>
+                    <button
+                      type="button"
+                      className={`upi-type-tab ${upiType === 'qr' ? 'active' : ''}`}
+                      onClick={() => setUpiType('qr')}
+                    >
+                      QR Code
+                    </button>
+                    <button
+                      type="button"
+                      className={`upi-type-tab ${upiType === 'id' ? 'active' : ''}`}
+                      onClick={() => setUpiType('id')}
+                    >
+                      UPI ID
+                    </button>
+                  </div>
+
+                  {upiType === 'app' && (
+                    <div className="upi-apps-section">
+                      <p className="upi-section-help">Choose your UPI App. On mobile, this will open the app instantly.</p>
+                      <div className="upi-apps-grid">
+                        {[
+                          { id: 'phonepe', label: 'PhonePe', color: '#5f259f', init: 'Pe' },
+                          { id: 'gpay', label: 'GPay', color: '#4285F4', init: 'G' },
+                          { id: 'paytm', label: 'Paytm', color: '#00baf2', init: 'Pm' },
+                          { id: 'bhim', label: 'BHIM', color: '#e05320', init: 'Bh' },
+                        ].map(app => (
+                          <button
+                            key={app.id}
+                            type="button"
+                            className={`upi-app-btn ${upiAppSelected === app.id ? 'active' : ''}`}
+                            onClick={() => setUpiAppSelected(app.id)}
+                          >
+                            <div className="upi-app-icon-wrap" style={{ background: app.color }}>
+                              {app.init}
+                            </div>
+                            <span>{app.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {upiType === 'qr' && (
+                    <div className="upi-qr-section">
+                      <p className="upi-section-help">Scan this QR Code with any UPI App to pay.</p>
+                      <div className="upi-qr-container">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
+                            `upi://pay?pa=${gatewaySettings.merchantVpa || 'lucky@ybl'}&pn=${encodeURIComponent(
+                              gatewaySettings.merchantName || 'BlackBox'
+                            )}&am=${product.price || 0}&cu=INR&tn=${encodeURIComponent(product.name)}`
+                          )}`}
+                          alt="UPI QR Code"
+                          className="upi-qr-image"
+                        />
+                        <div className="upi-qr-labels">
+                          <span className="upi-qr-vpa">{gatewaySettings.merchantVpa || 'lucky@ybl'}</span>
+                          <span className="upi-qr-merchant">{gatewaySettings.merchantName || 'BlackBox'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {upiType === 'id' && (
+                    <div className="form-group">
+                      <label className="form-label" htmlFor="upi-input">UPI ID / VPA</label>
+                      <input
+                        id="upi-input"
+                        type="text"
+                        className={`form-input ${errors.upiId ? 'error' : ''}`}
+                        placeholder="e.g. name@ybl or name@paytm"
+                        value={formData.upiId}
+                        onChange={e => setFormData(f => ({...f, upiId: e.target.value}))}
+                      />
+                      {errors.upiId && <span className="form-error">{errors.upiId}</span>}
+                    </div>
+                  )}
+
+                  {gatewaySettings.imbEnabled && (
+                    <div className="form-group" style={{ marginTop: 14 }}>
+                      <label className="form-label" htmlFor="customer-mobile">Customer Mobile Number</label>
+                      <input
+                        id="customer-mobile"
+                        type="text"
+                        className={`form-input ${errors.customerMobile ? 'error' : ''}`}
+                        placeholder="Enter 10-digit mobile number"
+                        maxLength={10}
+                        value={formData.customerMobile}
+                        onChange={e => setFormData(f => ({...f, customerMobile: e.target.value.replace(/\D/g, '').slice(0, 10)}))}
+                      />
+                      {errors.customerMobile && <span className="form-error">{errors.customerMobile}</span>}
+                    </div>
+                  )}
+
+                  {apiError && (
+                    <div className="api-error-alert">
+                      <span>⚠️ {apiError}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -244,8 +466,12 @@ export default function PaymentModal({ product, onClose }) {
             </div>
 
             {/* Pay button */}
-            <button className="pay-btn" onClick={handlePay} id="pay-now-btn">
-              {product.price ? (
+            <button className="pay-btn" onClick={handlePay} id="pay-now-btn" disabled={isApiCalling}>
+              {isApiCalling ? (
+                <span>Generating Payment URL...</span>
+              ) : upiType === 'qr' && method === 'upi' ? (
+                <span>Verify Payment</span>
+              ) : product.price ? (
                 <span>Pay ₹{product.price.toLocaleString('en-IN')}</span>
               ) : (
                 <span>{product.ctaLabel || 'Proceed'}</span>

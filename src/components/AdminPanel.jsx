@@ -1,19 +1,44 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, Package, CheckCircle2, Clock, IndianRupee, RefreshCw, Trash2, ShoppingBag } from 'lucide-react'
+import { X, Package, CheckCircle2, Clock, IndianRupee, RefreshCw, Trash2, ShoppingBag, Settings } from 'lucide-react'
 import './AdminPanel.css'
 
 export default function AdminPanel({ onClose }) {
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('orders')
+  const [settings, setSettings] = useState({
+    imbEnabled: false,
+    imbToken: '',
+    merchantVpa: 'lucky@ybl',
+    merchantName: 'BlackBox',
+    imbEnv: 'sandbox',
+    imbUpiIntentMode: 'direct'
+  })
 
   useEffect(() => {
     loadOrders()
+    loadSettings()
   }, [])
 
   const loadOrders = () => {
     const stored = JSON.parse(localStorage.getItem('bb_orders') || '[]')
     setOrders(stored.reverse())
+  }
+
+  const loadSettings = () => {
+    const stored = localStorage.getItem('bb_payment_settings')
+    if (stored) {
+      try {
+        setSettings(JSON.parse(stored))
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
+
+  const saveSettings = (updatedSettings) => {
+    setSettings(updatedSettings)
+    localStorage.setItem('bb_payment_settings', JSON.stringify(updatedSettings))
   }
 
   const clearOrders = () => {
@@ -52,6 +77,10 @@ export default function AdminPanel({ onClose }) {
           <button className={`admin-tab ${activeTab === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveTab('analytics')} id="admin-analytics-tab">
             <IndianRupee size={15} /> Analytics
+          </button>
+          <button className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')} id="admin-settings-tab">
+            <Settings size={15} /> Settings
           </button>
         </div>
 
@@ -151,6 +180,99 @@ export default function AdminPanel({ onClose }) {
                 <span>Avg Order Value</span>
                 <strong>₹{orders.length ? Math.round(totalRevenue / orders.length).toLocaleString('en-IN') : 0}</strong>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="admin-settings">
+            <h4 className="settings-title">IMB Payment Configuration</h4>
+            <p className="settings-desc">Configure your IMB Payment Gateway credentials for accepting UPI payments.</p>
+            
+            <div className="setting-card">
+              <div className="setting-row toggle-row">
+                <div className="setting-label-wrap">
+                  <span className="setting-label">Enable IMB Gateway</span>
+                  <span className="setting-subtext">Toggle to switch from Razorpay / Demo payments to IMB Gateway.</span>
+                </div>
+                <label className="switch-toggle">
+                  <input
+                    type="checkbox"
+                    checked={settings.imbEnabled}
+                    onChange={e => saveSettings({ ...settings, imbEnabled: e.target.checked })}
+                  />
+                  <span className="switch-slider"></span>
+                </label>
+              </div>
+
+              {settings.imbEnabled && (
+                <div className="settings-expanded">
+                  <div className="setting-row">
+                    <label className="input-label">Integration Mode</label>
+                    <select
+                      className="setting-select"
+                      value={settings.imbUpiIntentMode}
+                      onChange={e => saveSettings({ ...settings, imbUpiIntentMode: e.target.value })}
+                    >
+                      <option value="direct">Direct UPI Intent Deep-link (GPay/PhonePe/Paytm)</option>
+                      <option value="api">IMB API Order Flow (https://secure.imbpayment.in)</option>
+                    </select>
+                    <span className="input-help">
+                      {settings.imbUpiIntentMode === 'direct'
+                        ? '⚡ Highly recommended: Automatically opens all installed UPI apps directly on mobile devices using upi://pay.'
+                        : '🌐 API Mode: Sends a POST request to IMB servers to create an order and redirects to the payment link.'}
+                    </span>
+                  </div>
+
+                  <div className="setting-row">
+                    <label className="input-label">API User Token</label>
+                    <input
+                      type="text"
+                      className="setting-input"
+                      placeholder="e.g. 940149cb99886d8885f314476a994b6"
+                      value={settings.imbToken}
+                      onChange={e => saveSettings({ ...settings, imbToken: e.target.value })}
+                    />
+                    <span className="input-help">Your unique IMB Payment user_token.</span>
+                  </div>
+
+                  <div className="setting-row">
+                    <label className="input-label">Merchant UPI ID (VPA)</label>
+                    <input
+                      type="text"
+                      className="setting-input"
+                      placeholder="e.g. lucky@ybl"
+                      value={settings.merchantVpa}
+                      onChange={e => saveSettings({ ...settings, merchantVpa: e.target.value })}
+                    />
+                    <span className="input-help">Target UPI address where funds will be credited.</span>
+                  </div>
+
+                  <div className="setting-row">
+                    <label className="input-label">Merchant Name</label>
+                    <input
+                      type="text"
+                      className="setting-input"
+                      placeholder="e.g. BlackBox"
+                      value={settings.merchantName}
+                      onChange={e => saveSettings({ ...settings, merchantName: e.target.value })}
+                    />
+                    <span className="input-help">Name displayed to customers inside GPay, PhonePe, Paytm, etc.</span>
+                  </div>
+
+                  <div className="setting-row">
+                    <label className="input-label">Environment</label>
+                    <select
+                      className="setting-select"
+                      value={settings.imbEnv}
+                      onChange={e => saveSettings({ ...settings, imbEnv: e.target.value })}
+                    >
+                      <option value="sandbox">Sandbox / Staging (secure-stage.imb.org.in)</option>
+                      <option value="production">Production (secure.imbpayment.in)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

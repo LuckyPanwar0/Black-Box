@@ -12,6 +12,8 @@ import AdminPanel from './components/AdminPanel'
 import ProductPage from './pages/ProductPage'
 import './App.css'
 
+import { AuthProvider } from './context/AuthContext'
+
 // Home page layout
 function HomePage({ adminOpen, setAdminOpen }) {
   return (
@@ -46,19 +48,21 @@ export default function App() {
   const [adminOpen, setAdminOpen] = useState(false)
 
   return (
-    <WalletProvider>
-      <BrowserRouter>
-        <div className="app">
-          <Navbar />
-          <Routes>
-            <Route
-              path="/"
-              element={<HomePage adminOpen={adminOpen} setAdminOpen={setAdminOpen} />}
-            />
-            <Route path="/product/:productId" element={<ProductPage />} />
-          </Routes>
-        </div>
-      </BrowserRouter>
-    </WalletProvider>
+    <AuthProvider>
+      <WalletProvider>
+        <BrowserRouter>
+          <div className="app">
+            <Navbar />
+            <Routes>
+              <Route
+                path="/"
+                element={<HomePage adminOpen={adminOpen} setAdminOpen={setAdminOpen} />}
+              />
+              <Route path="/product/:productId" element={<ProductPage />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </WalletProvider>
+    </AuthProvider>
   )
 }
